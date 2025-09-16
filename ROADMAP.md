@@ -6,8 +6,8 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 ### **Resumen del Progreso**
 
-*   **Progreso General del Proyecto:** 0/39 (0%)
-*   **Fase 1: MVP Funcional:** 0/25 (0%)
+*   **Progreso General del Proyecto:** 2/39 (5%)
+*   **Fase 1: MVP Funcional:** 2/25 (8%)
 *   **Fase 2: Sistema Completo:** 0/8 (0%)
 *   **Fase 3: Enterprise Features:** 0/6 (0%)
 
@@ -17,21 +17,26 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 **Objetivo:** Lanzar una versión funcional y robusta del sistema capaz de gestionar el ciclo de vida completo de las reservas para los primeros tenants.
 
-**Progreso de Fase 1:** 0/25 (0%)
+**Progreso de Fase 1:** 2/25 (8%)
 
 ---
 
 #### **Sprint 1: Fundación y Arquitectura Multi-Tenant (2 semanas)**
-**Progreso:** 0/7 (0%)
+**Progreso:** 2/7 (28%)
 **Objetivo:** Establecer las bases técnicas del proyecto, asegurando que la arquitectura multi-tenant funcione correctamente.
 
--   [ ] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
--   [ ] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
+-   [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
+-   [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
 -   [ ] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
+    *   **Pendiente:** Falta crear el middleware de Next.js para interpretar los subdominios y obtener el ID del tenant. La configuración a nivel de proveedor (Vercel) se hará en el despliegue.
 -   [ ] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
+    *   **Pendiente:** Aún no se han aplicado las migraciones o el script SQL para crear estas tablas en la base de datos de Supabase.
 -   [ ] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.
+    *   **Pendiente:** Falta implementar la lógica de inicio de sesión y la protección de rutas para el dashboard de `admin`.
 -   [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
+    *   **Pendiente:** Actualmente tenemos una UI estática para el registro y la aprobación, pero falta conectarla con la base de datos para crear `business_registration_requests` y procesarlas.
 -   [ ] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
+    *   **Pendiente:** La función `get_current_tenant_id()` ya está definida en el modelo SQL, pero falta implementar el mecanismo en el middleware de Next.js que establezca la variable de sesión `app.current_tenant_id` en cada petición. Las políticas RLS tampoco se han aplicado aún.
 
 ---
 
