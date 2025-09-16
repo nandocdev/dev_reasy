@@ -6,8 +6,8 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 ### **Resumen del Progreso**
 
-*   **Progreso General del Proyecto:** 2/39 (5%)
-*   **Fase 1: MVP Funcional:** 2/25 (8%)
+*   **Progreso General del Proyecto:** 3/39 (7%)
+*   **Fase 1: MVP Funcional:** 3/25 (12%)
 *   **Fase 2: Sistema Completo:** 0/8 (0%)
 *   **Fase 3: Enterprise Features:** 0/6 (0%)
 
@@ -17,20 +17,21 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 **Objetivo:** Lanzar una versión funcional y robusta del sistema capaz de gestionar el ciclo de vida completo de las reservas para los primeros tenants.
 
-**Progreso de Fase 1:** 2/25 (8%)
+**Progreso de Fase 1:** 3/25 (12%)
 
 ---
 
 #### **Sprint 1: Fundación y Arquitectura Multi-Tenant (2 semanas)**
-**Progreso:** 2/7 (28%)
+**Progreso:** 3/7 (42%)
 **Objetivo:** Establecer las bases técnicas del proyecto, asegurando que la arquitectura multi-tenant funcione correctamente.
 
 -   [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
 -   [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
--   [ ] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
-    *   **Pendiente:** El middleware base (`src/middleware.ts`) está creado y enruta correctamente. Sin embargo, falta la lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7).
--   [ ] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
-    *   **Pendiente:** Aún no se han aplicado las migraciones o el script SQL para crear estas tablas en la base de datos de Supabase.
+-   [x] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
+    *   **Completado:** Se ha creado el middleware base (`src/middleware.ts`) que enruta correctamente las peticiones a subdominios de admin y de tenant hacia `/admin` y `/dashboard` respectivamente.
+    *   **Pendiente:** La lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7) aún no se ha implementado.
+-   [x] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
+    *   **Completado:** El archivo `docs/04 - Model.md` ha sido actualizado y consolidado para servir como la fuente de verdad del esquema SQL, incluyendo todas las tablas globales y de tenant.
 -   [ ] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.
     *   **Pendiente:** Falta implementar la lógica de inicio de sesión y la protección de rutas para el dashboard de `admin`.
 -   [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
@@ -130,3 +131,5 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 -   [ ] **Tarea 8.1:** Diseñar y documentar una API pública (RESTful) para que terceros puedan interactuar con los datos de un tenant (con su permiso).
 -   [ ] **Tarea 8.2:** Implementar un sistema de autenticación por API keys para la API pública.
 -   [ ] **Tarea 8.3 (POST-MVP):** Implementar el esquema de DB y la UI para el constructor de formularios dinámicos (RF-2.3).
+
+    

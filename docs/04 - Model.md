@@ -1,8 +1,6 @@
-```sql
 -- ==========================================
--- REASY SUPABASE SCHEMA - VERSIÓN MEJORADA
+-- REASY SUPABASE SCHEMA - VERSIÓN 2.0
 -- Multi-tenant SaaS with Row Level Security
--- Incluye mejoras críticas para MVP
 -- ==========================================
 
 -- Enable required extensions
@@ -69,6 +67,37 @@ AS $$
   SELECT (current_setting('app.current_tenant_id', true))::uuid;
 $$;
 
+-- Helper function to get current user's role
+CREATE OR REPLACE FUNCTION get_current_user_role()
+RETURNS TEXT
+LANGUAGE SQL
+SECURITY DEFINER
+AS $$
+  SELECT current_setting('app.current_user_role', true);
+$$;
+
+-- Helper function to check if user is tenant admin/owner
+CREATE OR REPLACE FUNCTION is_tenant_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+AS $$
+  SELECT get_current_user_role() IN ('owner', 'admin');
+$$;
+
+-- Function to generate booking numbers
+CREATE OR REPLACE FUNCTION generate_booking_number(tenant_uuid UUID)
+RETURNS TEXT
+LANGUAGE SQL
+AS $$
+    SELECT 'BK-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || 
+           LPAD(COALESCE(
+               (SELECT COUNT(*) + 1 
+                FROM tnt_bookings 
+                WHERE tenant_id = tenant_uuid 
+                AND DATE(created_at) = CURRENT_DATE), 1
+           )::TEXT, 4, '0');
+$$;
 
 -- ==========================================
 -- GLOBAL TABLES (Platform Level)
@@ -177,17 +206,13 @@ CREATE TABLE subscriptions (
 
 -- Tenant Usage Tracking
 CREATE TABLE tenant_usage (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     metric_name VARCHAR(100) NOT NULL,
     current_value INTEGER NOT NULL DEFAULT 0,
-    max_value INTEGER,
-    reset_period VARCHAR(20) DEFAULT 'monthly',
-    reset_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, metric_name)
+    PRIMARY KEY (tenant_id, metric_name)
 );
+COMMENT ON TABLE tenant_usage IS 'Rastrea el uso actual de recursos limitados por plan para cada tenant.';
 
 -- Platform Invoices
 CREATE TABLE platform_invoices (
@@ -216,17 +241,6 @@ CREATE TABLE platform_metrics (
     recorded_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- NUEVA estructura para la tabla tenant_usage
-DROP TABLE IF EXISTS tenant_usage CASCADE;
-CREATE TABLE tenant_usage (
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    metric_name VARCHAR(100) NOT NULL,
-    current_value INTEGER NOT NULL DEFAULT 0,
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (tenant_id, metric_name)
-);
-COMMENT ON TABLE tenant_usage IS 'Rastrea el uso actual de recursos limitados por plan para cada tenant.';
 
 
 -- ==========================================
@@ -392,25 +406,22 @@ CREATE TABLE tnt_resources (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ==========================================
--- NUEVAS TABLAS CRÍTICAS AGREGADAS
--- ==========================================
-
--- Staff-Service Associations (CRÍTICO - Faltaba)
+-- Staff-Service Associations (RF-2.1.2)
 CREATE TABLE tnt_service_staff (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     service_id UUID NOT NULL REFERENCES tnt_services(id) ON DELETE CASCADE,
     resource_id UUID NOT NULL REFERENCES tnt_resources(id) ON DELETE CASCADE,
     is_primary_provider BOOLEAN DEFAULT FALSE,
-    hourly_rate DECIMAL(10,2), -- Override del rate base si necesario
-    commission_percentage DECIMAL(5,2), -- Para cálculos de comisión
+    hourly_rate DECIMAL(10,2),
+    commission_percentage DECIMAL(5,2),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, service_id, resource_id)
 );
+COMMENT ON TABLE tnt_service_staff IS 'Tabla de unión (muchos-a-muchos) entre servicios y el personal que puede realizarlos.';
 
--- Booking Locks for Temporary Reservations (CRÍTICO - Faltaba)
+-- Booking Locks for Temporary Reservations (RF-3.3)
 CREATE TABLE tnt_booking_locks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -423,8 +434,9 @@ CREATE TABLE tnt_booking_locks (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, resource_id, start_time, end_time)
 );
+COMMENT ON TABLE tnt_booking_locks IS 'Implementa bloqueos optimistas para prevenir dobles reservas durante el flujo de checkout.';
 
--- Availability Cache (ALTO IMPACTO EN PERFORMANCE)
+-- Availability Cache (RNF-1.2)
 CREATE TABLE tnt_availability_cache (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -436,42 +448,8 @@ CREATE TABLE tnt_availability_cache (
     expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '1 hour'),
     UNIQUE(tenant_id, resource_id, service_id, date)
 );
+COMMENT ON TABLE tnt_availability_cache IS 'Almacena resultados pre-calculados de disponibilidad para acelerar las consultas.';
 
--- Dynamic Form Fields (POST-MVP, pero incluido para completitud)
-CREATE TABLE tnt_form_fields (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    service_id UUID REFERENCES tnt_services(id) ON DELETE CASCADE,
-    field_name VARCHAR(100) NOT NULL,
-    field_type tnt_form_field_type NOT NULL,
-    field_label VARCHAR(255) NOT NULL,
-    field_placeholder VARCHAR(255),
-    field_help_text TEXT,
-    field_options JSONB, -- Para selects: ["Option 1", "Option 2"]
-    validation_rules JSONB DEFAULT '{}', -- {"min": 3, "max": 50, "pattern": "regex"}
-    is_required BOOLEAN DEFAULT FALSE,
-    sort_order INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, service_id, field_name)
-);
-
--- Booking Form Data (POST-MVP)
-CREATE TABLE tnt_booking_form_data (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    booking_id UUID NOT NULL REFERENCES tnt_bookings(id) ON DELETE CASCADE,
-    field_id UUID NOT NULL REFERENCES tnt_form_fields(id) ON DELETE CASCADE,
-    field_value TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, booking_id, field_id)
-);
-COMMENT ON TABLE tnt_booking_form_data IS 'Almacena los datos recolectados de los formularios dinámicos para cada reserva.';
-
--- ==========================================
--- TABLAS EXISTENTES CONTINUADAS
--- ==========================================
 
 -- Resource Schedules
 CREATE TABLE tnt_schedules (
@@ -563,6 +541,40 @@ CREATE TABLE tnt_bookings (
     UNIQUE(tenant_id, booking_number)
 );
 
+-- Dynamic Form Fields
+CREATE TABLE tnt_form_fields (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    service_id UUID REFERENCES tnt_services(id) ON DELETE CASCADE, -- NULL si es global para el tenant
+    field_name VARCHAR(100) NOT NULL,
+    field_type tnt_form_field_type NOT NULL,
+    field_label VARCHAR(255) NOT NULL,
+    field_placeholder VARCHAR(255),
+    field_help_text TEXT,
+    field_options JSONB, -- Para selects: ["Option 1", "Option 2"]
+    validation_rules JSONB DEFAULT '{}', -- {"min": 3, "max": 50, "pattern": "regex"}
+    is_required BOOLEAN DEFAULT FALSE,
+    sort_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(tenant_id, service_id, field_name)
+);
+COMMENT ON TABLE tnt_form_fields IS 'Define la estructura de los campos de formulario personalizados por cada tenant.';
+
+-- Booking Form Data
+CREATE TABLE tnt_booking_form_data (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    booking_id UUID NOT NULL REFERENCES tnt_bookings(id) ON DELETE CASCADE,
+    field_id UUID NOT NULL REFERENCES tnt_form_fields(id) ON DELETE CASCADE,
+    field_value TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(tenant_id, booking_id, field_id)
+);
+COMMENT ON TABLE tnt_booking_form_data IS 'Almacena los datos recolectados de los formularios dinámicos para cada reserva.';
+
+
 -- Payments
 CREATE TABLE tnt_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -640,65 +652,6 @@ CREATE TABLE tnt_audit_logs (
 );
 
 
--- NUEVA TABLA: Asociación Staff-Servicios (RF-2.1.2)
-CREATE TABLE tnt_service_staff (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    service_id UUID NOT NULL REFERENCES tnt_services(id) ON DELETE CASCADE,
-    resource_id UUID NOT NULL REFERENCES tnt_resources(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, service_id, resource_id)
-);
-COMMENT ON TABLE tnt_service_staff IS 'Tabla de unión ( muchos-a-muchos) entre servicios y el personal que puede realizarlos.';
-
--- NUEVA TABLA: Bloqueo Temporal de Reservas (RF-3.3)
-CREATE TABLE tnt_booking_locks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    resource_id UUID NOT NULL REFERENCES tnt_resources(id) ON DELETE CASCADE,
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
-    locked_by_session VARCHAR(255) NOT NULL, -- ID de sesión anónima o de usuario
-    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '10 minutes'),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    -- Constraint que previene dobles bloqueos
-    UNIQUE(tenant_id, resource_id, start_time)
-);
-COMMENT ON TABLE tnt_booking_locks IS 'Implementa bloqueos optimistas para prevenir dobles reservas durante el flujo de checkout.';
-
--- NUEVA TABLA: Caché de Disponibilidad (RNF-1.2)
-CREATE TABLE tnt_availability_cache (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    resource_id UUID NOT NULL REFERENCES tnt_resources(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    time_slots JSONB NOT NULL, -- Array de slots disponibles para ese día
-    calculated_at TIMESTAMPTZ DEFAULT NOW(),
-    expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '1 hour'),
-    UNIQUE(tenant_id, resource_id, date)
-);
-COMMENT ON TABLE tnt_availability_cache IS 'Almacena resultados pre-calculados de disponibilidad para acelerar las consultas.';
-
--- NUEVAS TABLAS: Formularios Dinámicos (RF-2.3, Post-MVP)
-CREATE TABLE tnt_form_fields (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    service_id UUID REFERENCES tnt_services(id) ON DELETE CASCADE, -- NULL si es global para el tenant
-    field_name VARCHAR(100) NOT NULL,
-    field_type VARCHAR(20) NOT NULL,
-    field_label VARCHAR(255) NOT NULL,
-    validation_rules JSONB DEFAULT '{}',
-    is_required BOOLEAN DEFAULT FALSE,
-    sort_order INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(tenant_id, service_id, field_name)
-);
-COMMENT ON TABLE tnt_form_fields IS 'Define la estructura de los campos de formulario personalizados por cada tenant.';
-
-
-
 -- ==========================================
 -- ÍNDICES PARA OPTIMIZACIÓN DE RENDIMIENTO
 -- ==========================================
@@ -744,12 +697,8 @@ CREATE INDEX idx_tnt_notifications_tenant_customer ON tnt_notifications(tenant_i
 CREATE INDEX idx_tnt_schedules_tenant_resource_dates ON tnt_schedules(tenant_id, resource_id, start_date, end_date);
 CREATE INDEX idx_tnt_schedule_exceptions_tenant_resource_date ON tnt_schedule_exceptions(tenant_id, resource_id, exception_date);
 
-CREATE INDEX idx_tnt_inventory_levels_tenant_product_location ON tnt_inventory_levels(tenant_id, product_id, location_id);
-CREATE INDEX idx_tnt_products_tenant_business_sku ON tnt_products(tenant_id, business_id, sku);
-
 CREATE INDEX idx_tnt_audit_logs_tenant_entity ON tnt_audit_logs(tenant_id, entity_type, entity_id);
 CREATE INDEX idx_tnt_audit_logs_tenant_user_time ON tnt_audit_logs(tenant_id, user_id, created_at DESC);
-
 
 -- Índices para las nuevas tablas
 CREATE INDEX idx_tnt_service_staff_tenant_service ON tnt_service_staff(tenant_id, service_id);
@@ -766,7 +715,8 @@ CREATE INDEX idx_availability_cache_lookup ON tnt_availability_cache(tenant_id, 
 -- Función para verificar si un tenant puede crear un nuevo recurso limitado
 CREATE OR REPLACE FUNCTION check_tenant_limit(
     tenant_uuid UUID, 
-    metric_name VARCHAR
+    metric_name VARCHAR,
+    increment_by INTEGER DEFAULT 1
 ) RETURNS BOOLEAN 
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -795,8 +745,8 @@ BEGIN
     FROM tenant_usage tu
     WHERE tu.tenant_id = tenant_uuid AND tu.metric_name = metric_name;
     
-    -- Verificar si el uso actual es menor que el máximo permitido
-    RETURN current_usage < max_allowed;
+    -- Verificar si el uso actual más el incremento es menor o igual que el máximo permitido
+    RETURN (current_usage + increment_by) <= max_allowed;
 END;
 $$;
 COMMENT ON FUNCTION check_tenant_limit IS 'Verifica si un tenant ha excedido un límite de su plan (ej. max_users). Usar en triggers BEFORE INSERT.';
@@ -805,7 +755,7 @@ COMMENT ON FUNCTION check_tenant_limit IS 'Verifica si un tenant ha excedido un 
 CREATE OR REPLACE FUNCTION update_tenant_usage(
     tenant_uuid UUID,
     metric_name VARCHAR,
-    increment_by INTEGER
+    increment_by INTEGER DEFAULT 1
 ) RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -822,6 +772,24 @@ $$;
 COMMENT ON FUNCTION update_tenant_usage IS 'Actualiza el contador de uso para una métrica de un tenant.';
 
 
+-- Función para invalidar cache de disponibilidad
+CREATE OR REPLACE FUNCTION invalidate_availability_cache()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    affected_resource_id UUID;
+BEGIN
+    affected_resource_id := COALESCE(NEW.resource_id, OLD.resource_id);
+
+    -- Invalidar caché para el recurso afectado.
+    DELETE FROM tnt_availability_cache 
+    WHERE tenant_id = COALESCE(NEW.tenant_id, OLD.tenant_id)
+    AND resource_id = affected_resource_id;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$;
 
 -- ==========================================
 -- POLÍTICAS DE ROW LEVEL SECURITY (RLS)
@@ -837,154 +805,27 @@ CREATE POLICY "Tenant isolation" ON tnt_locations FOR ALL USING (tenant_id = get
 CREATE POLICY "Tenant isolation" ON tnt_services FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_resources FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_bookings FOR ALL USING (tenant_id = get_current_tenant_id());
--- ... (y así para todas las tablas tnt_)
-
--- Aplicar a las nuevas tablas
 CREATE POLICY "Tenant isolation" ON tnt_service_staff FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_booking_locks FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_availability_cache FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_form_fields FOR ALL USING (tenant_id = get_current_tenant_id());
 CREATE POLICY "Tenant isolation" ON tnt_booking_form_data FOR ALL USING (tenant_id = get_current_tenant_id());
+-- ... (y así para todas las tablas tnt_)
+
 
 -- (Se pueden añadir políticas más granulares por rol sobre estas políticas base de aislamiento)
-
-
-
-
--- ==========================================
--- FUNCIONES CRÍTICAS AGREGADAS
--- ==========================================
-
--- Helper function to get current user's tenant_id
-CREATE OR REPLACE FUNCTION get_current_tenant_id()
-RETURNS UUID
-LANGUAGE SQL
-SECURITY DEFINER
-AS $$
-  SELECT (current_setting('app.current_tenant_id', true))::uuid;
-$$;
-
--- Helper function to get current user's role
-CREATE OR REPLACE FUNCTION get_current_user_role()
-RETURNS TEXT
-LANGUAGE SQL
-SECURITY DEFINER
-AS $$
-  SELECT current_setting('app.current_user_role', true);
-$$;
-
--- Helper function to check if user is tenant admin/owner
-CREATE OR REPLACE FUNCTION is_tenant_admin()
-RETURNS BOOLEAN
-LANGUAGE SQL
-SECURITY DEFINER
-AS $$
-  SELECT get_current_user_role() IN ('owner', 'admin');
-$$;
-
--- Función para validar límites del plan (CRÍTICO - Agregado)
-CREATE OR REPLACE FUNCTION check_tenant_limit(
-    tenant_uuid UUID, 
-    metric_name VARCHAR, 
-    increment_by INTEGER DEFAULT 1
-) RETURNS BOOLEAN 
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    current_usage INTEGER;
-    max_allowed INTEGER;
-    plan_limits JSONB;
-BEGIN
-    -- Obtener límites del plan actual
-    SELECT sp.limits INTO plan_limits
-    FROM tenants t
-    JOIN subscription_plans sp ON sp.id = t.plan_id
-    WHERE t.id = tenant_uuid;
-    
-    -- Obtener uso actual
-    SELECT COALESCE(tu.current_value, 0) INTO current_usage
-    FROM tenant_usage tu
-    WHERE tu.tenant_id = tenant_uuid AND tu.metric_name = metric_name;
-    
-    -- Extraer límite específico del JSON
-    max_allowed := (plan_limits ->> metric_name)::INTEGER;
-    
-    -- Si no hay límite definido, permitir
-    IF max_allowed IS NULL THEN
-        RETURN TRUE;
-    END IF;
-    
-    -- Verificar si excede el límite
-    RETURN (current_usage + increment_by) <= max_allowed;
-END;
-$$;
-
--- Función para actualizar uso (CRÍTICO - Agregado)
-CREATE OR REPLACE FUNCTION update_tenant_usage(
-    tenant_uuid UUID,
-    metric_name VARCHAR,
-    increment_by INTEGER DEFAULT 1
-) RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    INSERT INTO tenant_usage (tenant_id, metric_name, current_value, updated_at)
-    VALUES (tenant_uuid, metric_name, increment_by, NOW())
-    ON CONFLICT (tenant_id, metric_name)
-    DO UPDATE SET 
-        current_value = tenant_usage.current_value + increment_by,
-        updated_at = NOW();
-END;
-$$;
-
--- Function to generate booking numbers
-CREATE OR REPLACE FUNCTION generate_booking_number(tenant_uuid UUID)
-RETURNS TEXT
-LANGUAGE SQL
-AS $$
-    SELECT 'BK-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || 
-           LPAD(COALESCE(
-               (SELECT COUNT(*) + 1 
-                FROM tnt_bookings 
-                WHERE tenant_id = tenant_uuid 
-                AND DATE(created_at) = CURRENT_DATE), 1
-           )::TEXT, 4, '0');
-$$;
-
--- Función para invalidar cache de disponibilidad (CRÍTICO - Agregado)
-CREATE OR REPLACE FUNCTION invalidate_availability_cache()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Invalidar cache para el recurso afectado
-    DELETE FROM tnt_availability_cache 
-    WHERE tenant_id = COALESCE(NEW.tenant_id, OLD.tenant_id)
-    AND resource_id = COALESCE(NEW.resource_id, OLD.resource_id);
-    
-    RETURN COALESCE(NEW, OLD);
-END;
-$$;
-
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-
 
 -- ==========================================
 -- TRIGGERS DE BASE DE DATOS
 -- ==========================================
 
 -- Triggers para actualizar 'updated_at'
--- (Se asume la creación de triggers para todas las tablas relevantes como se definió previamente)
-CREATE TRIGGER update_tnt_service_staff_updated_at BEFORE UPDATE ON tnt_service_staff FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
--- ... etc.
+-- (Se asume la creación de triggers para todas las tablas relevantes)
+CREATE TRIGGER update_platform_users_updated_at BEFORE UPDATE ON platform_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_tnt_users_updated_at BEFORE UPDATE ON tnt_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_tnt_services_updated_at BEFORE UPDATE ON tnt_services FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- ...etc para el resto de tablas con `updated_at`.
 
 -- Triggers para hacer cumplir los límites del plan
 CREATE OR REPLACE FUNCTION enforce_user_limit()
@@ -1004,25 +845,6 @@ CREATE TRIGGER check_user_limit_before_insert
     FOR EACH ROW EXECUTE FUNCTION enforce_user_limit();
 
 -- Triggers para invalidación de caché (RNF-1.2.2)
-CREATE OR REPLACE FUNCTION invalidate_availability_cache()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    affected_resource_id UUID;
-BEGIN
-    affected_resource_id := COALESCE(NEW.resource_id, OLD.resource_id);
-    
-    -- Invalidar caché para el recurso afectado en un rango de fechas relevante.
-    -- Una invalidación simple es borrar todo lo del recurso.
-    DELETE FROM tnt_availability_cache 
-    WHERE tenant_id = COALESCE(NEW.tenant_id, OLD.tenant_id)
-    AND resource_id = affected_resource_id;
-    
-    RETURN COALESCE(NEW, OLD);
-END;
-$$;
-
 CREATE TRIGGER invalidate_cache_on_booking_change
     AFTER INSERT OR UPDATE OR DELETE ON tnt_bookings
     FOR EACH ROW EXECUTE FUNCTION invalidate_availability_cache();
@@ -1034,7 +856,6 @@ CREATE TRIGGER invalidate_cache_on_schedule_change
 CREATE TRIGGER invalidate_cache_on_exception_change
     AFTER INSERT OR UPDATE OR DELETE ON tnt_schedule_exceptions
     FOR EACH ROW EXECUTE FUNCTION invalidate_availability_cache();
-
 
 -- ==========================================
 -- TRABAJOS PROGRAMADOS (CRON JOBS)
@@ -1054,6 +875,4 @@ SELECT cron.schedule(
     $$ DELETE FROM tnt_availability_cache WHERE expires_at < NOW(); $$
 );
 
-
-$$ language 'plpgsql';
-```
+    
