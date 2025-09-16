@@ -36,7 +36,8 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
     *   **Completado:** Se ha implementado el login para administradores a través de un Server Action. El middleware protege las rutas del dashboard de admin, redirigiendo a los no autenticados a la página de login.
     *   **Pendiente:** Falta añadir una verificación de rol para asegurar que solo los usuarios con el rol de `platform_admin` puedan acceder.
 -   [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
-    *   **Pendiente:** Actualmente tenemos una UI estática para el registro y la aprobación, pero falta conectarla con la base de datos para crear `business_registration_requests` y procesarlas.
+    *   **Progreso:** Se ha creado la UI en el dashboard de administrador para listar y gestionar las solicitudes de registro.
+    *   **Pendiente:** Conectar el formulario de registro (`/signup`) para que cree registros en `business_registration_requests`. Implementar los Server Actions para que los administradores puedan aprobar o rechazar dichas solicitudes desde la nueva UI.
 -   [ ] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
     *   **Pendiente:** La función `get_current_tenant_id()` ya está definida en el modelo SQL, pero falta implementar el mecanismo en el middleware de Next.js que establezca la variable de sesión `app.current_tenant_id` en cada petición. Las políticas RLS tampoco se han aplicado aún.
 
