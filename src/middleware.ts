@@ -24,10 +24,14 @@ export async function middleware(req: NextRequest) {
   const isDevelopment = hostname.includes('localhost');
   const mainDomain = isDevelopment ? 'localhost:9002' : 'reasy.app';
   
-  const subdomain = hostname.split('.')[0];
-  const isSubdomainRequest = hostname !== mainDomain;
+  let subdomain = '';
+  if (hostname.includes(mainDomain)) {
+      subdomain = hostname.replace(`.${mainDomain}`, '').split('.')[0];
+  }
 
-  if (isSubdomainRequest && subdomain === 'admin') {
+  const isSubdomainRequest = hostname !== mainDomain && !hostname.endsWith(`.${mainDomain}`);
+
+  if (subdomain === 'admin') {
       const supabase = createServerClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -50,9 +54,9 @@ export async function middleware(req: NextRequest) {
       url.pathname = `/admin${url.pathname}`;
       return NextResponse.rewrite(url);
 
-  } else if (isSubdomainRequest) {
+  } else if (subdomain) {
     // Es un subdominio de tenant.
-    console.log(`Rewriting to /dashboard for tenant: ${subdomain}`);
+    console.log(`Rewriting for tenant: ${subdomain}`);
     url.pathname = `/dashboard${url.pathname}`;
     return NextResponse.rewrite(url);
   }
