@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ReasyBook",
-  description: "Modern, scalable, and intuitive booking management.",
+  title: "Reasy",
+  description: "La forma más fácil de gestionar tu negocio de servicios.",
 };
 
 export default function RootLayout({
