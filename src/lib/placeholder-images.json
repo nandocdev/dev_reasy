@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "reasy-logo",
+      "description": "ReasyBook logo",
+      "imageUrl": "https://picsum.photos/seed/reasy-logo/200/50",
+      "imageHint": "logo abstract"
+    },
+    {
+      "id": "salon-interior",
+      "description": "A modern and clean salon interior.",
+      "imageUrl": "https://picsum.photos/seed/salon-interior/1200/800",
+      "imageHint": "salon interior"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "Avatar for a user.",
+      "imageUrl": "https://picsum.photos/seed/avatar1/100/100",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "Avatar for another user.",
+      "imageUrl": "https://picsum.photos/seed/avatar2/100/100",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "Avatar for a third user.",
+      "imageUrl": "https://picsum.photos/seed/avatar3/100/100",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "service-massage",
+      "description": "Image representing a massage service.",
+      "imageUrl": "https://picsum.photos/seed/massage/400/300",
+      "imageHint": "massage stones"
+    },
+    {
+      "id": "service-haircut",
+      "description": "Image representing a haircut service.",
+      "imageUrl": "https://picsum.photos/seed/haircut/400/300",
+      "imageHint": "hair styling"
+    }
+  ]
 }
