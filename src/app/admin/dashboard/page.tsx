@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerActionClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import {
   Card,
@@ -33,7 +33,7 @@ const pendingRequests = [
 ];
 
 export default async function AdminDashboardPage() {
-  const supabase = createServerClient();
+  const supabase = createServerActionClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

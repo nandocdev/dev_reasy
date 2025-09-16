@@ -1,11 +1,11 @@
 "use server";
 
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerActionClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function login(prevState: any, formData: FormData) {
-    const supabase = createServerClient();
+    const supabase = createServerActionClient();
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -27,7 +27,7 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function logout() {
-    const supabase = createServerClient();
+    const supabase = createServerActionClient();
     await supabase.auth.signOut();
     return redirect('/admin/login');
 }

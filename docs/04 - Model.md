@@ -796,21 +796,53 @@ $$;
 -- ==========================================
 
 -- Habilitar RLS en TODAS las tablas con prefijo tnt_
--- (Se asume la ejecución de ALTER TABLE ... ENABLE ROW LEVEL SECURITY; para todas las tablas de tenant)
+ALTER TABLE tnt_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_businesses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_service_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_service_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_service_staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_booking_locks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_availability_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_schedule_exceptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_form_fields ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_booking_form_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_notification_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tnt_audit_logs ENABLE ROW LEVEL SECURITY;
+
 
 -- Política genérica de aislamiento por tenant
-CREATE POLICY "Tenant isolation" ON tnt_users FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_businesses FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_locations FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_services FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_resources FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_bookings FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_service_staff FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_booking_locks FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_availability_cache FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_form_fields FOR ALL USING (tenant_id = get_current_tenant_id());
-CREATE POLICY "Tenant isolation" ON tnt_booking_form_data FOR ALL USING (tenant_id = get_current_tenant_id());
--- ... (y así para todas las tablas tnt_)
+CREATE POLICY "Tenant Isolation" ON tnt_users FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_user_profiles FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_invitations FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_businesses FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_locations FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_service_categories FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_services FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_service_pricing FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_resources FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_service_staff FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_booking_locks FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_availability_cache FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_schedules FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_schedule_exceptions FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_customers FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_bookings FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_form_fields FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_booking_form_data FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_payments FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_notification_templates FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_notifications FOR ALL USING (tenant_id = get_current_tenant_id());
+CREATE POLICY "Tenant Isolation" ON tnt_audit_logs FOR ALL USING (tenant_id = get_current_tenant_id());
 
 
 -- (Se pueden añadir políticas más granulares por rol sobre estas políticas base de aislamiento)
