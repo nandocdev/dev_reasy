@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createMiddlewareClient } from './lib/supabase/middleware';
+import { createServerClient, type CookieOptions } from '@supabase/auth-helpers-nextjs'
 
 export const config = {
   matcher: [
@@ -17,7 +17,25 @@ export const config = {
 }
 
 export async function middleware(req: NextRequest) {
-  const { supabase, response } = createMiddlewareClient(req);
+  const res = NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          res.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          res.cookies.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
+
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
@@ -44,7 +62,7 @@ export async function middleware(req: NextRequest) {
       }
       
       url.pathname = `/admin${url.pathname}`;
-      return NextResponse.rewrite(url, { request: { headers: req.headers } });
+      return NextResponse.rewrite(url, { request: res.headers });
   } 
   // Manejo de subdominios de tenants
   else if (subdomain) {
@@ -58,14 +76,18 @@ export async function middleware(req: NextRequest) {
       // Si el subdominio no corresponde a un tenant, redirigir
       return NextResponse.redirect(new URL('/', req.url));
     }
+    
+    // Aquí es donde se establecería el `app.current_tenant_id`
+    // Esta parte sigue pendiente como se describe en el ROADMAP Tarea 1.7
 
     // Reescribir la ruta para que la aplicación la maneje como /dashboard/...
     if (url.pathname === '/') {
         url.pathname = `/dashboard`;
-    } else {
+    } else if (!url.pathname.startsWith('/dashboard')) {
         url.pathname = `/dashboard${url.pathname}`;
     }
-    return NextResponse.rewrite(url, { request: { headers: req.headers } });
+    
+    return NextResponse.rewrite(url, { request: res.headers });
   }
 
   // Peticiones al dominio principal (no subdominios)
@@ -76,5 +98,5 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  return response;
+  return res;
 }
