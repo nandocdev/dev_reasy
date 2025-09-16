@@ -7,7 +7,7 @@ export const config = {
   // excepto en las que son para archivos estáticos (_next/static, _next/image, favicon.ico)
   // o rutas de API.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)',
   ],
 }
 
@@ -24,23 +24,32 @@ export function middleware(req: NextRequest) {
   // Ej: 'admin.reasy.app' -> 'admin'
   // Ej: 'acme.reasy.app' -> 'acme'
   // Ej: 'reasy.app' -> null
-  const subdomain = hostname.replace(`.${mainDomain}`, '');
+  const subdomain = hostname.split('.')[0];
+  const isSubdomainRequest = hostname !== mainDomain;
 
-  if (subdomain !== mainDomain && subdomain !== '') {
+  if (isSubdomainRequest) {
     // Si hay un subdominio
     if (subdomain === 'admin') {
-      // Si el subdominio es 'admin', reescribe la ruta a /admin
-      // req.url es /dashboard, se reescribe a /admin/dashboard
+      // Si el subdominio es 'admin', reescribe la ruta al portal de administración.
+      // Ej: 'admin.reasy.app/dashboard' -> '/admin/dashboard'
       console.log(`Rewriting to /admin${url.pathname}`);
       url.pathname = `/admin${url.pathname}`;
       return NextResponse.rewrite(url);
     } else {
-      // Es un subdominio de tenant, reescribe a la página de booking
-      // Más adelante, aquí se obtendrá el ID del tenant desde el slug
-      console.log(`Rewriting to /booking for tenant: ${subdomain}`);
-      url.pathname = `/booking`;
+      // Es un subdominio de tenant. Por ahora, reescribimos al dashboard principal.
+      // Más adelante (Tarea 1.7), aquí se obtendrá el ID del tenant desde el slug
+      // y se pasará a la aplicación.
+      console.log(`Rewriting to /dashboard for tenant: ${subdomain}`);
+      url.pathname = `/dashboard${url.pathname}`;
       return NextResponse.rewrite(url);
     }
+  }
+  
+  // Si no es un subdominio y se intenta acceder a /dashboard o /admin directamente,
+  // se debe redirigir a la página de login o a la landing.
+  if (!isSubdomainRequest && (url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/admin'))) {
+    // Por ahora, redirigimos a la landing. En el futuro, a una página de login específica.
+    return NextResponse.redirect(new URL('/', req.url))
   }
 
   // Si no hay subdominio, permite que la petición continúe a la página solicitada (ej. la landing page).

@@ -28,7 +28,7 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 -   [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
 -   [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
 -   [ ] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
-    *   **Pendiente:** Falta crear el middleware de Next.js para interpretar los subdominios y obtener el ID del tenant. La configuración a nivel de proveedor (Vercel) se hará en el despliegue.
+    *   **Pendiente:** El middleware base (`src/middleware.ts`) está creado y enruta correctamente. Sin embargo, falta la lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7).
 -   [ ] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
     *   **Pendiente:** Aún no se han aplicado las migraciones o el script SQL para crear estas tablas en la base de datos de Supabase.
 -   [ ] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.
