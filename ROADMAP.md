@@ -6,8 +6,8 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 ### **Resumen del Progreso**
 
--  **Progreso General del Proyecto:** 4/39 (10%)
--  **Fase 1: MVP Funcional:** 4/25 (16%)
+-  **Progreso General del Proyecto:** 5/39 (13%)
+-  **Fase 1: MVP Funcional:** 5/25 (20%)
 -  **Fase 2: Sistema Completo:** 0/8 (0%)
 -  **Fase 3: Enterprise Features:** 0/6 (0%)
 
@@ -17,20 +17,26 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 **Objetivo:** Lanzar una versión funcional y robusta del sistema capaz de gestionar el ciclo de vida completo de las reservas para los primeros tenants.
 
-**Progreso de Fase 1:** 4/25 (16%)
+**Progreso de Fase 1:** 5/25 (20%)
 
 ---
 
 #### **Sprint 1: Fundación y Arquitectura Multi-Tenant (2 semanas)**
 
-**Progreso:** 4/7 (57%)
+**Progreso:** 5/7 (71%)
 **Objetivo:** Establecer las bases técnicas del proyecto, asegurando que la arquitectura multi-tenant funcione correctamente.
 
 -  [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
 -  [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
 -  [x] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
-   -  **Completado:** Se ha creado el middleware base (`src/middleware.ts`) que enruta correctamente las peticiones a subdominios de admin y de tenant hacia `/admin` y `/dashboard` respectivamente.
-   -  **Pendiente:** La lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7) aún no se ha implementado.
+   -  **Completado:** Sistema completo de enrutamiento por subdominio implementado:
+      -  Middleware base que enruta correctamente peticiones de admin y tenant
+      -  Funciones de lookup de tenant por slug (`/lib/tenants/lookup.ts`)
+      -  Funciones específicas para middleware (`/lib/tenants/middleware.ts`)
+      -  Funciones de contexto para Server Actions (`/lib/tenants/context.ts`)
+      -  Validación de slugs reservados y verificación de estado de tenant
+      -  Redirección automática para tenants inactivos o no encontrados
+      -  Headers para transferir contexto de tenant entre capas
 -  [x] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
    -  **Completado:** El archivo `docs/04 - Model.md` ha sido actualizado y consolidado para servir como la fuente de verdad del esquema SQL, incluyendo todas las tablas globales y de tenant.
 -  [x] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.

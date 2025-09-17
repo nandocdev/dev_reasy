@@ -2,6 +2,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { 
+  getTenantInfoBySlug, 
+  isTenantInfoActive, 
+  setTenantContext,
+  isReservedSlug 
+} from '@/lib/tenants/middleware'
 
 export const config = {
   matcher: [
@@ -85,10 +91,39 @@ export async function middleware(req: NextRequest) {
   
   // Tenant subdomain logic
   else if (subdomain) {
+    // Check if it's a reserved slug
+    if (isReservedSlug(subdomain)) {
+      // Reserved slug not allowed as tenant
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    // Lookup tenant by subdomain
+    const tenantInfo = await getTenantInfoBySlug(subdomain, req, res);
+    
+    if (!tenantInfo) {
+      // Tenant not found, redirect to main domain
+      const mainDomainUrl = new URL('/', req.url);
+      mainDomainUrl.hostname = mainDomain;
+      return NextResponse.redirect(mainDomainUrl);
+    }
+
+    if (!isTenantInfoActive(tenantInfo)) {
+      // Tenant inactive, show maintenance page or redirect
+      const mainDomainUrl = new URL('/', req.url);
+      mainDomainUrl.hostname = mainDomain;
+      return NextResponse.redirect(mainDomainUrl);
+    }
+
+    // Set tenant context for RLS
+    await setTenantContext(tenantInfo.id, req, res);
+
+    // Redirect to dashboard if not already there
     if (!url.pathname.startsWith('/dashboard')) {
         url.pathname = `/dashboard${url.pathname}`;
-        return NextResponse.rewrite(url);
+        return NextResponse.rewrite(url, { request: { headers: req.headers } });
     }
+
+    return NextResponse.next();
   }
 
   // Main domain logic
