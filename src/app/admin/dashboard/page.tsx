@@ -1,5 +1,4 @@
-import { createServerActionClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { requirePlatformAdmin } from '@/lib/auth/admin-guard';
 import {
   Card,
   CardContent,
@@ -33,15 +32,8 @@ const pendingRequests = [
 ];
 
 export default async function AdminDashboardPage() {
-  const supabase = createServerActionClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return redirect('/admin/login');
-  }
-
-  // TODO: Check if user has platform_admin role.
+  // Verificar autorización y obtener datos del usuario
+  const platformUser = await requirePlatformAdmin();
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center p-4 sm:p-6 lg:p-8 bg-muted/40 font-body">
@@ -49,7 +41,7 @@ export default async function AdminDashboardPage() {
         <div className="flex justify-between items-start">
             <div>
                 <h1 className="text-2xl font-bold font-headline">Platform Dashboard</h1>
-                <p className="text-muted-foreground">Welcome, {user.email}</p>
+                <p className="text-muted-foreground">Welcome, {platformUser.first_name} {platformUser.last_name} ({platformUser.role})</p>
             </div>
             <form action={logout}>
                 <Button type="submit" variant="outline">Logout</Button>

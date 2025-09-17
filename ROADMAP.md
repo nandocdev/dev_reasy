@@ -6,10 +6,10 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 ### **Resumen del Progreso**
 
-*   **Progreso General del Proyecto:** 4/39 (10%)
-*   **Fase 1: MVP Funcional:** 4/25 (16%)
-*   **Fase 2: Sistema Completo:** 0/8 (0%)
-*   **Fase 3: Enterprise Features:** 0/6 (0%)
+-  **Progreso General del Proyecto:** 4/39 (10%)
+-  **Fase 1: MVP Funcional:** 4/25 (16%)
+-  **Fase 2: Sistema Completo:** 0/8 (0%)
+-  **Fase 3: Enterprise Features:** 0/6 (0%)
 
 ---
 
@@ -22,63 +22,73 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 ---
 
 #### **Sprint 1: Fundación y Arquitectura Multi-Tenant (2 semanas)**
+
 **Progreso:** 4/7 (57%)
 **Objetivo:** Establecer las bases técnicas del proyecto, asegurando que la arquitectura multi-tenant funcione correctamente.
 
--   [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
--   [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
--   [x] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
-    *   **Completado:** Se ha creado el middleware base (`src/middleware.ts`) que enruta correctamente las peticiones a subdominios de admin y de tenant hacia `/admin` y `/dashboard` respectivamente.
-    *   **Pendiente:** La lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7) aún no se ha implementado.
--   [x] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
-    *   **Completado:** El archivo `docs/04 - Model.md` ha sido actualizado y consolidado para servir como la fuente de verdad del esquema SQL, incluyendo todas las tablas globales y de tenant.
--   [x] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.
-    *   **Completado:** Se ha implementado el login para administradores a través de un Server Action. El middleware protege las rutas del dashboard de admin, redirigiendo a los no autenticados a la página de login.
-    *   **Pendiente:** Falta añadir una verificación de rol para asegurar que solo los usuarios con el rol de `platform_admin` puedan acceder.
--   [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
-    *   **Progreso:** Se ha creado la UI en el dashboard de administrador para listar y gestionar las solicitudes de registro.
-    *   **Pendiente:** Conectar el formulario de registro (`/signup`) para que cree registros en `business_registration_requests`. Implementar los Server Actions para que los administradores puedan aprobar o rechazar dichas solicitudes desde la nueva UI.
--   [ ] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
-    *   **Pendiente:** La función `get_current_tenant_id()` ya está definida en el modelo SQL, pero falta implementar el mecanismo en el middleware de Next.js que establezca la variable de sesión `app.current_tenant_id` en cada petición. Las políticas RLS tampoco se han aplicado aún.
+-  [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
+-  [x] **Tarea 1.2:** Configurar proyecto de Supabase, definir variables de entorno y generar tipos iniciales.
+-  [x] **Tarea 1.3 (CRÍTICO):** Implementar enrutamiento por subdominio (`*.reasy.app` y `admin.reasy.app`) a nivel de Vercel y middleware en Next.js.
+   -  **Completado:** Se ha creado el middleware base (`src/middleware.ts`) que enruta correctamente las peticiones a subdominios de admin y de tenant hacia `/admin` y `/dashboard` respectivamente.
+   -  **Pendiente:** La lógica para consultar la base de datos, obtener el ID del tenant a partir del `slug` del subdominio y establecerlo en la sesión de la petición (necesario para la Tarea 1.7) aún no se ha implementado.
+-  [x] **Tarea 1.4:** Implementar el esquema de la base de datos para tablas globales (`platform_users`, `tenants`, `subscription_plans`, `business_registration_requests`, `tenant_usage`).
+   -  **Completado:** El archivo `docs/04 - Model.md` ha sido actualizado y consolidado para servir como la fuente de verdad del esquema SQL, incluyendo todas las tablas globales y de tenant.
+-  [x] **Tarea 1.5:** Desarrollar el flujo de autenticación para `platform_users` en el portal `admin`.
+   -  **Completado:** Se ha implementado completamente el sistema de autenticación y autorización para el portal admin, incluyendo:
+      -  Verificación de rol en el middleware para proteger rutas automáticamente
+      -  Funciones helper reutilizables para verificar roles (`/lib/auth/platform.ts`)
+      -  Función de protección de rutas (`/lib/auth/admin-guard.ts`)
+      -  Server Actions actualizadas con verificación de rol
+      -  Dashboard admin que muestra información del usuario autorizado
+      -  Solo usuarios con rol 'super_admin' o 'admin' pueden acceder al portal
+      -  Usuarios sin permisos son redirigidos automáticamente al login
+-  [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
+   -  **Progreso:** Se ha creado la UI en el dashboard de administrador para listar y gestionar las solicitudes de registro.
+   -  **Pendiente:** Conectar el formulario de registro (`/signup`) para que cree registros en `business_registration_requests`. Implementar los Server Actions para que los administradores puedan aprobar o rechazar dichas solicitudes desde la nueva UI.
+-  [ ] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
+   -  **Pendiente:** La función `get_current_tenant_id()` ya está definida en el modelo SQL, pero falta implementar el mecanismo en el middleware de Next.js que establezca la variable de sesión `app.current_tenant_id` en cada petición. Las políticas RLS tampoco se han aplicado aún.
 
 ---
 
 #### **Sprint 2: Gestión Básica del Tenant (3 semanas)**
+
 **Progreso:** 0/7 (0%)
 **Objetivo:** Permitir que un tenant configure los elementos esenciales de su negocio.
 
--   [ ] **Tarea 2.1:** Implementar el esquema de DB para `tnt_users`, `tnt_businesses`, `tnt_locations`, `tnt_services`.
--   [ ] **Tarea 2.2:** Desarrollar el CRUD completo para la gestión de Servicios (`tnt_services`).
--   [ ] **Tarea 2.3:** Desarrollar el CRUD completo para la gestión de Ubicaciones (`tnt_locations`).
--   [ ] **Tarea 2.4:** Implementar el flujo de invitación y gestión de Personal (`tnt_users`).
--   [ ] **Tarea 2.5 (CRÍTICO):** Implementar la lógica de validación de límites de plan (`check_tenant_limit` y triggers) para usuarios y ubicaciones.
--   [ ] **Tarea 2.6:** Desarrollar el dashboard principal del tenant, mostrando un resumen del negocio.
--   [ ] **Tarea 2.7:** Implementar el wizard de onboarding guiado para el primer login del tenant (UC-TN-01).
+-  [ ] **Tarea 2.1:** Implementar el esquema de DB para `tnt_users`, `tnt_businesses`, `tnt_locations`, `tnt_services`.
+-  [ ] **Tarea 2.2:** Desarrollar el CRUD completo para la gestión de Servicios (`tnt_services`).
+-  [ ] **Tarea 2.3:** Desarrollar el CRUD completo para la gestión de Ubicaciones (`tnt_locations`).
+-  [ ] **Tarea 2.4:** Implementar el flujo de invitación y gestión de Personal (`tnt_users`).
+-  [ ] **Tarea 2.5 (CRÍTICO):** Implementar la lógica de validación de límites de plan (`check_tenant_limit` y triggers) para usuarios y ubicaciones.
+-  [ ] **Tarea 2.6:** Desarrollar el dashboard principal del tenant, mostrando un resumen del negocio.
+-  [ ] **Tarea 2.7:** Implementar el wizard de onboarding guiado para el primer login del tenant (UC-TN-01).
 
 ---
 
 #### **Sprint 3: Motor de Disponibilidad y Reservas (4 semanas)**
+
 **Progreso:** 0/6 (0%)
 **Objetivo:** Construir el corazón funcional del sistema: el cálculo de disponibilidad y la creación de reservas. Este es el sprint más complejo.
 
--   [ ] **Tarea 3.1:** Implementar el esquema de DB para `tnt_resources`, `tnt_schedules`, `tnt_schedule_exceptions`, `tnt_bookings`, y la tabla de unión `tnt_service_staff`.
--   [ ] **Tarea 3.2:** Desarrollar la interfaz para que el Staff gestione sus horarios y excepciones (UC-ST-01).
--   [ ] **Tarea 3.3:** Desarrollar la interfaz para asociar Staff con Servicios (UC-TN-02).
--   [ ] **Tarea 3.4 (CRÍTICO):** Implementar el algoritmo del motor de disponibilidad en la API, considerando todos los requisitos (horarios, excepciones, staff asignado, reservas existentes).
--   [ ] **Tarea 3.5 (CRÍTICO):** Implementar el mecanismo de bloqueo de reservas (`tnt_booking_locks`) y su integración en el flujo de reserva (RF-3.3).
--   [ ] **Tarea 3.6:** Crear la primera versión del widget de reserva, que consume el motor de disponibilidad y permite crear una reserva completa (UC-CU-01).
+-  [ ] **Tarea 3.1:** Implementar el esquema de DB para `tnt_resources`, `tnt_schedules`, `tnt_schedule_exceptions`, `tnt_bookings`, y la tabla de unión `tnt_service_staff`.
+-  [ ] **Tarea 3.2:** Desarrollar la interfaz para que el Staff gestione sus horarios y excepciones (UC-ST-01).
+-  [ ] **Tarea 3.3:** Desarrollar la interfaz para asociar Staff con Servicios (UC-TN-02).
+-  [ ] **Tarea 3.4 (CRÍTICO):** Implementar el algoritmo del motor de disponibilidad en la API, considerando todos los requisitos (horarios, excepciones, staff asignado, reservas existentes).
+-  [ ] **Tarea 3.5 (CRÍTICO):** Implementar el mecanismo de bloqueo de reservas (`tnt_booking_locks`) y su integración en el flujo de reserva (RF-3.3).
+-  [ ] **Tarea 3.6:** Crear la primera versión del widget de reserva, que consume el motor de disponibilidad y permite crear una reserva completa (UC-CU-01).
 
 ---
 
 #### **Sprint 4: Pagos y Optimización de Rendimiento (3 semanas)**
+
 **Progreso:** 0/5 (0%)
 **Objetivo:** Integrar los pagos y asegurar que el sistema cumple con los requisitos de rendimiento del MVP.
 
--   [ ] **Tarea 4.1:** Implementar el esquema de DB para `tnt_payments` y `tnt_refunds`.
--   [ ] **Tarea 4.2:** Integrar Stripe Connect para procesar depósitos o pagos completos durante el flujo de reserva.
--   [ ] **Tarea 4.3 (CRÍTICO):** Implementar la estrategia de caché para el motor de disponibilidad (`tnt_availability_cache`).
--   [ ] **Tarea 4.4 (CRÍTICO):** Implementar los triggers de invalidación de caché para garantizar la consistencia de los datos.
--   [ ] **Tarea 4.5:** Realizar pruebas de carga en el endpoint de disponibilidad para validar el cumplimiento de RNF-1.2 (< 2s).
+-  [ ] **Tarea 4.1:** Implementar el esquema de DB para `tnt_payments` y `tnt_refunds`.
+-  [ ] **Tarea 4.2:** Integrar Stripe Connect para procesar depósitos o pagos completos durante el flujo de reserva.
+-  [ ] **Tarea 4.3 (CRÍTICO):** Implementar la estrategia de caché para el motor de disponibilidad (`tnt_availability_cache`).
+-  [ ] **Tarea 4.4 (CRÍTICO):** Implementar los triggers de invalidación de caché para garantizar la consistencia de los datos.
+-  [ ] **Tarea 4.5:** Realizar pruebas de carga en el endpoint de disponibilidad para validar el cumplimiento de RNF-1.2 (< 2s).
 
 ---
 
@@ -91,22 +101,24 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 ---
 
 #### **Sprint 5: Sistema de Notificaciones y Comunicaciones**
+
 **Progreso:** 0/4 (0%)
 
--   [ ] **Tarea 5.1:** Implementar esquema de DB para `tnt_notification_templates` y `tnt_notifications`.
--   [ ] **Tarea 5.2:** Integrar un servicio de terceros (ej. SendGrid) para el envío de emails transaccionales.
--   [ ] **Tarea 5.3:** Desarrollar un sistema basado en eventos para disparar notificaciones (reserva creada, recordatorio 24h, cancelación).
--   [ ] **Tarea 5.4:** Crear una interfaz para que los tenants personalicen sus plantillas de notificación.
+-  [ ] **Tarea 5.1:** Implementar esquema de DB para `tnt_notification_templates` y `tnt_notifications`.
+-  [ ] **Tarea 5.2:** Integrar un servicio de terceros (ej. SendGrid) para el envío de emails transaccionales.
+-  [ ] **Tarea 5.3:** Desarrollar un sistema basado en eventos para disparar notificaciones (reserva creada, recordatorio 24h, cancelación).
+-  [ ] **Tarea 5.4:** Crear una interfaz para que los tenants personalicen sus plantillas de notificación.
 
 ---
 
 #### **Sprint 6: Reportes y Políticas de Negocio**
+
 **Progreso:** 0/4 (0%)
 
--   [ ] **Tarea 6.1:** Diseñar y desarrollar un dashboard de analíticas básicas para tenants (ingresos, total de reservas, ocupación por staff).
--   [ ] **Tarea 6.2:** Implementar esquema de DB para `tnt_cancellation_policies` y `tnt_refunds`.
--   [ ] **Tarea 6.3:** Desarrollar la lógica para aplicar políticas de cancelación durante el proceso de cancelación de una reserva.
--   [ ] **Tarea 6.4:** Implementar la gestión de reembolsos (parciales/totales) a través de Stripe.
+-  [ ] **Tarea 6.1:** Diseñar y desarrollar un dashboard de analíticas básicas para tenants (ingresos, total de reservas, ocupación por staff).
+-  [ ] **Tarea 6.2:** Implementar esquema de DB para `tnt_cancellation_policies` y `tnt_refunds`.
+-  [ ] **Tarea 6.3:** Desarrollar la lógica para aplicar políticas de cancelación durante el proceso de cancelación de una reserva.
+-  [ ] **Tarea 6.4:** Implementar la gestión de reembolsos (parciales/totales) a través de Stripe.
 
 ---
 
@@ -119,19 +131,19 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 ---
 
 #### **Sprint 7: Integraciones Externas**
+
 **Progreso:** 0/3 (0%)
 
--   [ ] **Tarea 7.1:** Implementar esquema de DB para `tnt_integrations`.
--   [ ] **Tarea 7.2:** Desarrollar la integración con Google Calendar para sincronización bidireccional de agendas.
--   [ ] **Tarea 7.3:** Investigar y (si es viable) desarrollar la integración con Outlook Calendar.
+-  [ ] **Tarea 7.1:** Implementar esquema de DB para `tnt_integrations`.
+-  [ ] **Tarea 7.2:** Desarrollar la integración con Google Calendar para sincronización bidireccional de agendas.
+-  [ ] **Tarea 7.3:** Investigar y (si es viable) desarrollar la integración con Outlook Calendar.
 
 ---
 
 #### **Sprint 8: API Pública y Personalización Avanzada**
+
 **Progreso:** 0/3 (0%)
 
--   [ ] **Tarea 8.1:** Diseñar y documentar una API pública (RESTful) para que terceros puedan interactuar con los datos de un tenant (con su permiso).
--   [ ] **Tarea 8.2:** Implementar un sistema de autenticación por API keys para la API pública.
--   [ ] **Tarea 8.3 (POST-MVP):** Implementar el esquema de DB y la UI para el constructor de formularios dinámicos (RF-2.3).
-
-    
+-  [ ] **Tarea 8.1:** Diseñar y documentar una API pública (RESTful) para que terceros puedan interactuar con los datos de un tenant (con su permiso).
+-  [ ] **Tarea 8.2:** Implementar un sistema de autenticación por API keys para la API pública.
+-  [ ] **Tarea 8.3 (POST-MVP):** Implementar el esquema de DB y la UI para el constructor de formularios dinámicos (RF-2.3).

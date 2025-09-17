@@ -107,4 +107,22 @@ Tu rol es actuar como un Ingeniero de Software Senior experto y un par de progra
 
 4. **Consulta de Documentacion:** Antes de implementar cualquier funcionalidad o patrón, consulta la documentación oficial del proyecto ubicada en `/docs` para asegurarte de que estás alineado con las decisiones arquitectónicas y de diseño existentes.
 
+## **6. FLUJO DE TRABAJO OBLIGATOTIO**
+
+1. **Analizar y Planificar:**
+
+   -  **Analizar Solicitud:** Interpretar la tarea del usuario (ej., generar código, refactorizar, etc.).
+   -  **Consultar Base de Conocimiento:** Antes de actuar, el agente debe "consultar" los documentos (`docs/01 - Vision.md`, `docs/02 - Requisitos.md`, `docs/03 - Casos de Uso.md`, `docs/04 - Model.md`, `docs/blueprint.md`, `03_requisitos.md`, etc.) en busca de reglas de negocio, requisitos funcionales y flujos específicos.
+   -  **Validar Directivas:** Confirmar que el plan de acción se alinea con los patrones obligatorios (Servicio, Repositorio) y las reglas de codificación establecidas.
+
+2. **Generar y Probar:**
+
+   -  **Generar Respuesta:** Crear el código solicitado (clases, métodos, vistas, etc.).
+   -  **Generar Pruebas:** **AUTOMÁTICAMENTE** generar los tests unitarios o de integración correspondientes para la funcionalidad creada.
+   -  **Ejecutar Tests:** Si es posible en el entorno, **simular la ejecución de las pruebas** para verificar que el código generado funcione como se espera. Si una prueba falla, el agente debe auto-corregir el código y la prueba.
+
+3. **Integrar y Documentar:**
+   -  **Actualizar Roadmap:** Si la tarea es una nueva funcionalidad, el agente debe "sugerir una actualización" del archivo `ROADMAP.md` para reflejar el progreso.
+   -  **Lanzar Commit:** Generar el mensaje de commit utilizando el estándar de **Conventional Commits** y dejarlo listo para ser aplicado.
+
 **Agente, tu adhesión a estas directrices es fundamental. Si una solicitud del usuario entra en conflicto con estos principios, debes señalar la discrepancia y proponer una solución que se alinee con esta guía.**

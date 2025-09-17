@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 
 export const config = {
   matcher: [
@@ -19,6 +20,12 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
+  // Create a response that we can modify
+  const res = NextResponse.next();
+
+  // Create supabase middleware client
+  const supabase = createMiddlewareClient({ req, res });
+
   const isDevelopment = hostname.includes('localhost');
   const mainDomain = isDevelopment ? 'localhost:9002' : 'reasy.app';
   
@@ -29,10 +36,51 @@ export async function middleware(req: NextRequest) {
 
   // Admin subdomain logic
   if (subdomain === 'admin') {
+      // Check if user is trying to access admin routes
       if (!url.pathname.startsWith('/admin')) {
         url.pathname = `/admin${url.pathname}`;
-        return NextResponse.rewrite(url);
       }
+
+      // For admin routes, check authentication and authorization
+      if (url.pathname.startsWith('/admin') && url.pathname !== '/admin/login') {
+        // Get the user session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // No session, redirect to admin login
+          return NextResponse.redirect(new URL('/admin/login', req.url));
+        }
+
+        // Check if user is a platform admin
+        try {
+          const { data: platformUser, error } = await supabase
+            .from('platform_users')
+            .select('role, is_active')
+            .eq('email', session.user.email)
+            .eq('is_active', true)
+            .single();
+
+          if (error || !platformUser) {
+            // User not found in platform_users or inactive
+            await supabase.auth.signOut();
+            return NextResponse.redirect(new URL('/admin/login', req.url));
+          }
+
+          // Check if user has admin role (super_admin or admin)
+          const adminRoles = ['super_admin', 'admin'];
+          if (!adminRoles.includes(platformUser.role)) {
+            // User doesn't have admin role
+            await supabase.auth.signOut();
+            return NextResponse.redirect(new URL('/admin/login', req.url));
+          }
+        } catch (error) {
+          console.error('Error checking platform user role:', error);
+          await supabase.auth.signOut();
+          return NextResponse.redirect(new URL('/admin/login', req.url));
+        }
+      }
+
+      return NextResponse.rewrite(url, { request: { headers: req.headers } });
   } 
   
   // Tenant subdomain logic
@@ -51,5 +99,5 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  return NextResponse.next();
+  return res;
 }
