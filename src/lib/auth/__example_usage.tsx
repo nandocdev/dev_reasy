@@ -9,6 +9,7 @@ import {
   hasCurrentUserRole,
   getCurrentPlatformUserInfo 
 } from '@/lib/auth/platform';
+import { PlatformUserRole } from '@/lib/auth/types';
 import { requirePlatformAdmin } from '@/lib/auth/admin-guard';
 
 /**

@@ -1,5 +1,6 @@
 import { createServerActionClient } from '@/lib/supabase/server';
-import { getTenantBySlug, isTenantActive } from './lookup';
+import { getTenantBySlug } from './lookup';
+import { isTenantActive } from './utils';
 
 /**
  * Establece el contexto de tenant para RLS en Server Actions

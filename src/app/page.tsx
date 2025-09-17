@@ -85,8 +85,8 @@ export default function LandingPage() {
                 <Image
                   src="https://picsum.photos/seed/salon-interior/1200/800"
                   alt="Salon Interior"
-                  layout="fill"
-                  objectFit="cover"
+                  fill={true}
+                  style={{ objectFit: 'cover' }}
                   className="rounded-2xl"
                 />
               </div>

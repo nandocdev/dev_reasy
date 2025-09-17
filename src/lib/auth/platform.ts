@@ -2,30 +2,7 @@
 
 import { createServerActionClient } from "@/lib/supabase/server";
 import { cache } from "react";
-
-/**
- * Tipos de roles de platform_users según el esquema de la base de datos
- */
-export type PlatformUserRole = 'super_admin' | 'admin' | 'support' | 'developer';
-
-/**
- * Roles que tienen acceso al portal de administración
- */
-export const ADMIN_ROLES: PlatformUserRole[] = ['super_admin', 'admin'];
-
-/**
- * Interface para platform_user obtenido de la base de datos
- */
-interface PlatformUser {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: PlatformUserRole;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { PlatformUser, PlatformUserRole, ADMIN_ROLES } from './types';
 
 /**
  * Obtiene la información del platform_user autenticado
@@ -45,7 +22,7 @@ export const getCurrentPlatformUser = cache(async (): Promise<PlatformUser | nul
     // Obtener los datos del platform_user desde la tabla
     const { data: platformUser, error: dbError } = await supabase
       .from('platform_users')
-      .select('id, email, first_name, last_name, role, is_active, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, is_active, is_verified, created_at, updated_at')
       .eq('email', authUser.email)
       .eq('is_active', true)
       .single();
