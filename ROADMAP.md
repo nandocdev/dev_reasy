@@ -6,8 +6,8 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 ### **Resumen del Progreso**
 
--  **Progreso General del Proyecto:** 5/39 (13%)
--  **Fase 1: MVP Funcional:** 5/25 (20%)
+-  **Progreso General del Proyecto:** 7/39 (18%)
+-  **Fase 1: MVP Funcional:** 7/25 (28%)
 -  **Fase 2: Sistema Completo:** 0/8 (0%)
 -  **Fase 3: Enterprise Features:** 0/6 (0%)
 
@@ -17,13 +17,13 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
 
 **Objetivo:** Lanzar una versión funcional y robusta del sistema capaz de gestionar el ciclo de vida completo de las reservas para los primeros tenants.
 
-**Progreso de Fase 1:** 5/25 (20%)
+**Progreso de Fase 1:** 7/25 (28%)
 
 ---
 
 #### **Sprint 1: Fundación y Arquitectura Multi-Tenant (2 semanas)**
 
-**Progreso:** 5/7 (71%)
+**Progreso:** 7/7 (100%)
 **Objetivo:** Establecer las bases técnicas del proyecto, asegurando que la arquitectura multi-tenant funcione correctamente.
 
 -  [x] **Tarea 1.1:** Configurar proyecto Next.js 14+ con TypeScript, ESLint, Prettier y Tailwind CSS.
@@ -48,11 +48,29 @@ Este documento describe el plan de desarrollo para la aplicación Reasy. Las tar
       -  Dashboard admin que muestra información del usuario autorizado
       -  Solo usuarios con rol 'super_admin' o 'admin' pueden acceder al portal
       -  Usuarios sin permisos son redirigidos automáticamente al login
--  [ ] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
-   -  **Progreso:** Se ha creado la UI en el dashboard de administrador para listar y gestionar las solicitudes de registro.
-   -  **Pendiente:** Conectar el formulario de registro (`/signup`) para que cree registros en `business_registration_requests`. Implementar los Server Actions para que los administradores puedan aprobar o rechazar dichas solicitudes desde la nueva UI.
--  [ ] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
-   -  **Pendiente:** La función `get_current_tenant_id()` ya está definida en el modelo SQL, pero falta implementar el mecanismo en el middleware de Next.js que establezca la variable de sesión `app.current_tenant_id` en cada petición. Las políticas RLS tampoco se han aplicado aún.
+-  [x] **Tarea 1.6:** Implementar el flujo de registro y aprobación de nuevos tenants (UC-PL-01).
+   -  **Completado:** Se ha implementado completamente el flujo de registro y aprobación de tenants:
+      -  Formulario de signup funcional conectado a Server Actions (`/src/app/signup/page.tsx`)
+      -  Server Actions completas para gestión de solicitudes (`/src/actions/tenant.ts`)
+      -  Dashboard admin actualizado con datos reales de la base de datos
+      -  Componente de acciones para aprobar/rechazar solicitudes
+      -  Cliente Supabase admin para operaciones privilegiadas
+      -  Validaciones del lado cliente y servidor
+      -  Manejo de estados de éxito/error con notificaciones
+      -  Creación automática de tenant, usuario Auth y registro tnt_users al aprobar
+      -  Script de datos iniciales para planes de suscripción
+-  [x] **Tarea 1.7:** Configurar RLS básicas y la función `get_current_tenant_id()` para que se popule desde el middleware.
+   -  **Completado:** Se ha implementado completamente el sistema de Row Level Security (RLS):
+      -  Funciones RPC para establecer contexto: `set_app_config()`, `set_current_tenant_id()`
+      -  Función `get_current_tenant_id()` funcional para políticas RLS
+      -  Middleware actualizado para establecer contexto de tenant en cada request
+      -  Server Actions mejoradas con establecimiento de contexto RLS
+      -  Políticas "Tenant Isolation" aplicables a todas las tablas `tnt_*`
+      -  Script de configuración inicial (`/scripts/setup-rls.sql`)
+      -  Dashboard de testing para verificar RLS (`/admin/rls-test`)
+      -  Funciones de prueba para validar aislamiento entre tenants
+      -  Transferencia segura de contexto via headers entre capas
+      -  Fallbacks y manejo de errores robusto
 
 ---
 

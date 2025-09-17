@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,9 +11,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Icons } from "@/components/icons"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
+import { requestBusinessRegistration, type RegistrationState } from "@/actions/tenant"
+import { useActionState } from "react"
 
 export default function SignupPage() {
+  const [state, formAction] = useActionState(requestBusinessRegistration, null);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4 font-body">
       <Card className="mx-auto max-w-sm w-full shadow-lg">
@@ -25,38 +32,56 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
+          {state?.success && (
+            <Alert className="mb-4 border-green-200 bg-green-50">
+              <AlertDescription className="text-green-800">
+                ¡Solicitud enviada correctamente! Nuestro equipo revisará tu solicitud y te contactaremos pronto.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {state?.error && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertDescription>
+                {state.error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <form action={formAction} className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="business-name">Nombre del Negocio</Label>
-              <Input id="business-name" placeholder="Acmé Salon" required />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="first-name">Nombre</Label>
-                <Input id="first-name" placeholder="Max" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="last-name">Apellido</Label>
-                <Input id="last-name" placeholder="Robinson" required />
-              </div>
+              <Label htmlFor="businessName">Nombre del Negocio</Label>
+              <Input 
+                id="businessName" 
+                name="businessName"
+                placeholder="Acmé Salon" 
+                required 
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@example.com"
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" type="password" />
+              <Label htmlFor="contactPhone">Teléfono (opcional)</Label>
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                type="tel"
+                placeholder="+34 600 123 456"
+              />
             </div>
             <Button type="submit" className="w-full">
-              Crear una cuenta
+              Solicitar acceso
             </Button>
-          </div>
+          </form>
+          
           <div className="mt-4 text-center text-sm">
             ¿Ya tienes una cuenta?{" "}
             <Link href="/login" className="underline text-primary">

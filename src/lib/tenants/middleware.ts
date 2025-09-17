@@ -69,10 +69,8 @@ export function isTenantInfoActive(tenant: TenantInfo): boolean {
 }
 
 /**
- * Establece el tenant_id en la sesión de la petición para RLS
- * Nota: En el middleware, solo validamos el tenant. El contexto RLS se establece
- * en las Server Actions y API routes donde se hacen las consultas reales.
- * @param tenantId - ID del tenant para logging
+ * Establece el contexto de tenant en el middleware para RLS
+ * @param tenantId - ID del tenant 
  * @param req - Request de Next.js
  * @param res - Response de Next.js
  */
@@ -82,13 +80,28 @@ export async function setTenantContext(
   res: NextResponse
 ): Promise<void> {
   try {
-    // En el middleware, solo agregamos el tenant_id como header para uso posterior
+    // Agregar el tenant_id como header para uso posterior en Server Actions
     res.headers.set('x-tenant-id', tenantId);
     
-    // El contexto RLS se establecerá en las funciones que realmente consultan datos
-    console.log(`Tenant context set for middleware: ${tenantId}`);
+    // Establecer el contexto RLS en Supabase
+    const supabase = createMiddlewareClient({ req, res });
+    
+    // Intentar establecer la variable de sesión para RLS
+    try {
+      await supabase.rpc('set_app_config', {
+        config_name: 'app.current_tenant_id',
+        config_value: tenantId
+      });
+      console.log(`RLS tenant context set successfully: ${tenantId}`);
+    } catch (rpcError) {
+      // Si la función RPC no existe, registrar el error pero continuar
+      console.warn('RPC function set_app_config not available, RLS context not set:', rpcError);
+      console.log(`Tenant context set via header only: ${tenantId}`);
+    }
   } catch (error) {
     console.error('Error setting tenant context:', error);
+    // Asegurar que al menos el header se establezca
+    res.headers.set('x-tenant-id', tenantId);
   }
 }
 

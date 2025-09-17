@@ -25,15 +25,20 @@ import { logout } from '@/actions/auth';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-const pendingRequests = [
-    { id: '1', businessName: 'Acmé Salon', email: 'owner@acmesalon.com', plan: 'Professional', requestedAt: '2024-07-29' },
-    { id: '2', businessName: 'The Barber Shop', email: 'contact@barbers.com', plan: 'Basic', requestedAt: '2024-07-28' },
-];
+import { createServerActionClient } from '@/lib/supabase/server';
+import { ApprovalActions } from './components/ApprovalActions';
 
 export default async function AdminDashboardPage() {
   // Verificar autorización y obtener datos del usuario
   const platformUser = await requirePlatformAdmin();
+  
+  // Obtener solicitudes pendientes de la base de datos
+  const supabase = createServerActionClient();
+  const { data: pendingRequests } = await supabase
+    .from('business_registration_requests')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center p-4 sm:p-6 lg:p-8 bg-muted/40 font-body">
@@ -72,42 +77,36 @@ export default async function AdminDashboardPage() {
                         <CardDescription>Review and approve new businesses joining the platform.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Business Name</TableHead>
-                                <TableHead>Owner Email</TableHead>
-                                <TableHead>Requested Plan</TableHead>
-                                <TableHead>Requested At</TableHead>
-                                <TableHead><span className="sr-only">Actions</span></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {pendingRequests.map((req) => (
-                                <TableRow key={req.id}>
-                                    <TableCell className="font-medium">{req.businessName}</TableCell>
-                                    <TableCell>{req.email}</TableCell>
-                                    <TableCell><Badge variant="outline">{req.plan}</Badge></TableCell>
-                                    <TableCell>{req.requestedAt}</TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Toggle menu</span>
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem>Approve</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Reject</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        {pendingRequests && pendingRequests.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                    <TableHead>Business Name</TableHead>
+                                    <TableHead>Owner Email</TableHead>
+                                    <TableHead>Phone</TableHead>
+                                    <TableHead>Requested At</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {pendingRequests.map((req: any) => (
+                                    <TableRow key={req.id}>
+                                        <TableCell className="font-medium">{req.business_name}</TableCell>
+                                        <TableCell>{req.email}</TableCell>
+                                        <TableCell>{req.contact_phone || 'N/A'}</TableCell>
+                                        <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <ApprovalActions requestId={req.id} />
+                                        </TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No hay solicitudes pendientes de aprobación.
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>

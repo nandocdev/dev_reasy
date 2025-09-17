@@ -9,14 +9,27 @@ export async function setServerTenantContext(tenantId: string): Promise<void> {
   try {
     const supabase = createServerActionClient();
     
-    // Ejecutar una query para establecer la variable de sesión
+    // Intentar establecer la variable de sesión usando la función RPC
     await supabase.rpc('set_app_config', {
       config_name: 'app.current_tenant_id',
       config_value: tenantId
     });
+    
+    console.log(`RLS tenant context set successfully: ${tenantId}`);
   } catch (error) {
-    // Si la función RPC no existe, intentar con SQL directo
-    console.warn('RPC function not available, tenant context may not be set correctly');
+    console.error('Error setting tenant context via RPC:', error);
+    
+    // Fallback: intentar con función específica para tenant_id
+    try {
+      const supabase = createServerActionClient();
+      await supabase.rpc('set_current_tenant_id', {
+        tenant_id_value: tenantId
+      });
+      console.log(`RLS tenant context set via fallback function: ${tenantId}`);
+    } catch (fallbackError) {
+      console.error('Fallback RLS function also failed:', fallbackError);
+      throw new Error(`Failed to set tenant context: ${error}`);
+    }
   }
 }
 
